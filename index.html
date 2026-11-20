@@ -17,7 +17,7 @@
     <div class="links">
       <a href="https://github.com/manjitullal">GitHub</a>
       <a href="https://www.linkedin.com/in/manjit-ullal/">LinkedIn</a>
-      <a href="Manjitgullal.pdf">CV</a>
+      <a href="#" id="cv" onclick="revealCV(event)">CV</a>
       <a href="#" id="email" onclick="revealEmail(event)">Email (click to reveal)</a>
     </div>
   </header>
@@ -232,6 +232,14 @@
 </main>
 
 <script>
+  function revealCV(e) {
+    e.preventDefault();
+    var addr = ["manjit862", "gmail.com"].join("@");
+    var a = document.getElementById("cv");
+    a.textContent = "CV: email " + addr + " for my latest CV";
+    a.href = "mailto:" + addr + "?subject=CV%20request";
+    a.onclick = null;
+  }
   function revealEmail(e) {
     e.preventDefault();
     var addr = ["manjit862", "gmail.com"].join("@");
