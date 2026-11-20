@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DataFrame Library Benchmark · Manjit Ullal</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+</head>
+<body>
+<main class="note">
+  <p><a href="../index.html#notes">&larr; back</a></p>
+<h1 id="dataframe-library-benchmark">DataFrame Library Benchmark</h1>
+<p>pandas vs. Polars vs. PyArrow vs. DuckDB vs. Dask on the same 1M-row dataset.</p>
+<h2 id="files">Files</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="code/dataframe-benchmark/generate_data.py"><code>generate_data.py</code></a></td>
+<td>Creates <code>data/ads.csv</code> (67 MB) and <code>data/ads.parquet</code> (27 MB): 1M rows × 10 columns of dummy ads data, plus <code>data/advertisers.parquet</code> (5k rows) for the join</td>
+</tr>
+<tr>
+<td><a href="code/dataframe-benchmark/bench.py"><code>bench.py</code></a></td>
+<td>Times 7 tasks in every library and writes <code>results.md</code></td>
+</tr>
+<tr>
+<td><code>results.md</code></td>
+<td>The latest results table (see below)</td>
+</tr>
+<tr>
+<td><a href="code/dataframe-benchmark/requirements.txt"><code>requirements.txt</code></a></td>
+<td>Libraries to install</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Columns:</strong> <code>user_id, ad_id, advertiser_id, surface, country, event_ts, impressions, clicks, spend, bid</code></p>
+<h2 id="run-it">Run it</h2>
+<pre><code class="language-bash">cd Concepts/dataframe-benchmark
+.venv/bin/python generate_data.py   # only needed once
+.venv/bin/python bench.py
+</code></pre>
+<p>The <code>.venv</code> uses Python 3.13. To rebuild it, use any Python ≥ 3.11 (pandas 3.x requires it):</p>
+<pre><code class="language-bash">python3.13 -m venv .venv &amp;&amp; .venv/bin/pip install -r requirements.txt
+</code></pre>
+<h2 id="results">Results</h2>
+<p><strong>Setup:</strong>
+- Apple M5 Pro, 18 cores, 48 GB RAM.
+- Python 3.13.18 · pandas 3.1.1 · Polars 2.1.0 · PyArrow 26.0.1 · Dask 2026.8.0 · DuckDB 2.0.0.
+- Median of 5 runs after a warm-up, in <strong>milliseconds</strong> (lower is better). Fastest per task in <strong>bold</strong>.
+- Every library returns identical answers: 102,032 filtered rows, 5,000 groups, 8 verticals.</p>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th style="text-align: right;">read_csv</th>
+<th style="text-align: right;">read_parquet</th>
+<th style="text-align: right;">filter</th>
+<th style="text-align: right;">groupby</th>
+<th style="text-align: right;">sort_top100</th>
+<th style="text-align: right;">join_groupby</th>
+<th style="text-align: right;">write_parquet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pandas (NumPy dtypes)</td>
+<td style="text-align: right;">18</td>
+<td style="text-align: right;">7.3</td>
+<td style="text-align: right;">3.0</td>
+<td style="text-align: right;">8.1</td>
+<td style="text-align: right;">82</td>
+<td style="text-align: right;">21</td>
+<td style="text-align: right;">131</td>
+</tr>
+<tr>
+<td>pandas (PyArrow dtypes)</td>
+<td style="text-align: right;">15</td>
+<td style="text-align: right;">5.4</td>
+<td style="text-align: right;">2.3</td>
+<td style="text-align: right;">8.8</td>
+<td style="text-align: right;">135</td>
+<td style="text-align: right;">26</td>
+<td style="text-align: right;">127</td>
+</tr>
+<tr>
+<td>Polars (eager)</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">3.5</td>
+<td style="text-align: right;"><strong>1.1</strong></td>
+<td style="text-align: right;">7.1</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">6.0</td>
+<td style="text-align: right;"><strong>17</strong></td>
+</tr>
+<tr>
+<td>Polars (lazy, from file)</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;"><strong>3.5</strong></td>
+<td style="text-align: right;">1.5</td>
+<td style="text-align: right;">4.1</td>
+<td style="text-align: right;">5.7</td>
+<td style="text-align: right;">4.2</td>
+<td style="text-align: right;">19</td>
+</tr>
+<tr>
+<td>PyArrow</td>
+<td style="text-align: right;"><strong>13</strong></td>
+<td style="text-align: right;">5.0</td>
+<td style="text-align: right;">3.9</td>
+<td style="text-align: right;"><strong>1.4</strong></td>
+<td style="text-align: right;">124</td>
+<td style="text-align: right;">14</td>
+<td style="text-align: right;">129</td>
+</tr>
+<tr>
+<td>DuckDB (in-memory Arrow)</td>
+<td style="text-align: right;">92</td>
+<td style="text-align: right;">7.7</td>
+<td style="text-align: right;">2.0</td>
+<td style="text-align: right;">2.8</td>
+<td style="text-align: right;"><strong>2.4</strong></td>
+<td style="text-align: right;"><strong>2.5</strong></td>
+<td style="text-align: right;">28</td>
+</tr>
+<tr>
+<td>DuckDB (from file)</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">2.3</td>
+<td style="text-align: right;">4.2</td>
+<td style="text-align: right;">5.1</td>
+<td style="text-align: right;">3.5</td>
+<td style="text-align: right;">–</td>
+</tr>
+<tr>
+<td>Dask (from file)</td>
+<td style="text-align: right;">54</td>
+<td style="text-align: right;">39</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">23</td>
+<td style="text-align: right;">45</td>
+<td style="text-align: right;">46</td>
+<td style="text-align: right;">187</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tasks:</strong>
+- <code>filter</code>: count rows where surface = search and spend &gt; 50.
+- <code>groupby</code>: per advertiser, sum impressions and clicks, and average spend.
+- <code>sort_top100</code>: sort by spend, keep the top 100 rows.
+- <code>join_groupby</code>: join to advertisers, then total spend per vertical.
+- <strong>"From file"</strong> rows include reading the Parquet file; lazy engines are normally used that way. The other rows run on data already in memory.</p>
+<h2 id="what-i-learned">What I learned</h2>
+<ol>
+<li><strong>At 1M rows, every library is fast</strong> (milliseconds). At this size, choose by ease of use and team familiarity, not speed. The differences start to matter at 10M–1B rows.</li>
+<li><strong>Polars is the best all-rounder.</strong> It's fastest or close on almost every task, and writes Parquet about <strong>8× faster</strong> than pandas.</li>
+<li><strong>Lazy beats eager</strong> (Polars lazy vs. eager on groupby and sort). The query optimizer reads <strong>only the columns the query needs</strong> from Parquet ("projection pushdown") and plans the whole query at once. That's why <em>reading from the file</em> can beat data that's <em>already in memory</em>.</li>
+<li><strong>DuckDB wins on sort and join.</strong> <code>ORDER BY … LIMIT 100</code> becomes a <strong>top-K</strong> operation instead of a full sort. You write it in SQL, and it can query Parquet files directly.</li>
+<li><strong>The "sort" column isn't a fair fight.</strong> pandas, PyArrow, and Polars eager do a <strong>full sort</strong>, while DuckDB and Polars lazy only find the top 100. In pandas, <code>df.nlargest(100, "spend")</code> is the top-K equivalent.</li>
+<li><strong>PyArrow is mainly a format and I/O layer.</strong> Its CSV read and groupby are fast, but its API is low-level and sorting is slow. pandas writes Parquet <em>through</em> PyArrow, which is why their write times are the same.</li>
+<li><strong>PyArrow dtypes in pandas aren't automatically faster.</strong> They gave a faster CSV read and filter here, but slower sort and groupby. Measure before switching.</li>
+<li><strong>Dask is slowest at this size.</strong> Scheduling its tasks has overhead. Dask is built for data <strong>larger than memory</strong> or for <strong>clusters</strong>.</li>
+</ol>
+<h2 id="same-task-every-library-groupby-aggregation">Same task, every library: groupby + aggregation</h2>
+<pre><code class="language-python"># pandas
+df.groupby(&quot;advertiser_id&quot;).agg(impressions=(&quot;impressions&quot;, &quot;sum&quot;),
+                                clicks=(&quot;clicks&quot;, &quot;sum&quot;),
+                                spend=(&quot;spend&quot;, &quot;mean&quot;))
+
+# Polars (eager); for lazy, start from pl.scan_parquet(...) and end with .collect()
+df.group_by(&quot;advertiser_id&quot;).agg(pl.col(&quot;impressions&quot;).sum(),
+                                 pl.col(&quot;clicks&quot;).sum(),
+                                 pl.col(&quot;spend&quot;).mean())
+
+# PyArrow
+tbl.group_by(&quot;advertiser_id&quot;).aggregate([(&quot;impressions&quot;, &quot;sum&quot;),
+                                         (&quot;clicks&quot;, &quot;sum&quot;),
+                                         (&quot;spend&quot;, &quot;mean&quot;)])
+
+# DuckDB (SQL, directly on a Parquet file, a pandas/Polars DataFrame, or an Arrow table)
+duckdb.sql(&quot;&quot;&quot;SELECT advertiser_id, sum(impressions), sum(clicks), avg(spend)
+              FROM 'ads.parquet' GROUP BY advertiser_id&quot;&quot;&quot;)
+
+# Dask (pandas-like API; nothing runs until .compute())
+dd.read_parquet(&quot;ads.parquet&quot;).groupby(&quot;advertiser_id&quot;).agg(
+    {&quot;impressions&quot;: &quot;sum&quot;, &quot;clicks&quot;: &quot;sum&quot;, &quot;spend&quot;: &quot;mean&quot;}).compute()
+</code></pre>
+<h2 id="when-to-use-which">When to use which</h2>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Interviews; small or medium data; the most libraries and examples</td>
+<td><strong>pandas</strong></td>
+</tr>
+<tr>
+<td>Fast single-machine pipelines on 10M–1B rows</td>
+<td><strong>Polars</strong> (prefer the lazy API)</td>
+</tr>
+<tr>
+<td>SQL-style analysis on Parquet or CSV files, without loading them first</td>
+<td><strong>DuckDB</strong></td>
+</tr>
+<tr>
+<td>Reading and writing formats; passing data between tools without copying</td>
+<td><strong>PyArrow</strong></td>
+</tr>
+<tr>
+<td>Data larger than memory, or a cluster, while keeping a pandas-like API</td>
+<td><strong>Dask</strong> (or <strong>PySpark</strong>)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="results_1">Results</h2>
+<p>Python 3.13.18 · pandas 3.1.1 · polars 2.1.0 · pyarrow 26.0.1 · dask 2026.8.0 · duckdb 2.0.0</p>
+<p>Median of 5 runs, in milliseconds (lower is better). Fastest per task in <strong>bold</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th style="text-align: right;">read_csv</th>
+<th style="text-align: right;">read_parquet</th>
+<th style="text-align: right;">filter</th>
+<th style="text-align: right;">groupby</th>
+<th style="text-align: right;">sort_top100</th>
+<th style="text-align: right;">join_groupby</th>
+<th style="text-align: right;">write_parquet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pandas (NumPy dtypes)</td>
+<td style="text-align: right;">18</td>
+<td style="text-align: right;">7.3</td>
+<td style="text-align: right;">3.0</td>
+<td style="text-align: right;">8.1</td>
+<td style="text-align: right;">82</td>
+<td style="text-align: right;">21</td>
+<td style="text-align: right;">131</td>
+</tr>
+<tr>
+<td>pandas (PyArrow dtypes)</td>
+<td style="text-align: right;">15</td>
+<td style="text-align: right;">5.4</td>
+<td style="text-align: right;">2.3</td>
+<td style="text-align: right;">8.8</td>
+<td style="text-align: right;">135</td>
+<td style="text-align: right;">26</td>
+<td style="text-align: right;">127</td>
+</tr>
+<tr>
+<td>Polars (eager)</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">3.5</td>
+<td style="text-align: right;"><strong>1.1</strong></td>
+<td style="text-align: right;">7.1</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">6.0</td>
+<td style="text-align: right;"><strong>17</strong></td>
+</tr>
+<tr>
+<td>Polars (lazy, from file)</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;"><strong>3.5</strong></td>
+<td style="text-align: right;">1.5</td>
+<td style="text-align: right;">4.1</td>
+<td style="text-align: right;">5.7</td>
+<td style="text-align: right;">4.2</td>
+<td style="text-align: right;">19</td>
+</tr>
+<tr>
+<td>PyArrow</td>
+<td style="text-align: right;"><strong>13</strong></td>
+<td style="text-align: right;">5.0</td>
+<td style="text-align: right;">3.9</td>
+<td style="text-align: right;"><strong>1.4</strong></td>
+<td style="text-align: right;">124</td>
+<td style="text-align: right;">14</td>
+<td style="text-align: right;">129</td>
+</tr>
+<tr>
+<td>DuckDB (in-memory Arrow)</td>
+<td style="text-align: right;">92</td>
+<td style="text-align: right;">7.7</td>
+<td style="text-align: right;">2.0</td>
+<td style="text-align: right;">2.8</td>
+<td style="text-align: right;"><strong>2.4</strong></td>
+<td style="text-align: right;"><strong>2.5</strong></td>
+<td style="text-align: right;">28</td>
+</tr>
+<tr>
+<td>DuckDB (from file)</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">2.3</td>
+<td style="text-align: right;">4.2</td>
+<td style="text-align: right;">5.1</td>
+<td style="text-align: right;">3.5</td>
+<td style="text-align: right;">–</td>
+</tr>
+<tr>
+<td>Dask (from file)</td>
+<td style="text-align: right;">54</td>
+<td style="text-align: right;">39</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">23</td>
+<td style="text-align: right;">45</td>
+<td style="text-align: right;">46</td>
+<td style="text-align: right;">187</td>
+</tr>
+</tbody>
+</table>
+  <footer><a href="../index.html">Manjit Ullal</a></footer>
+</main>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters: [
+    {left: '\\[', right: '\\]', display: true},
+    {left: '\\(', right: '\\)', display: false}]})"></script>
+</body>
+</html>

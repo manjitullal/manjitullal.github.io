@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The R-Learner, Explained in Seven Layers · Manjit Ullal</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+</head>
+<body>
+<main class="note">
+  <p><a href="../index.html#notes">&larr; back</a></p>
+<h1 id="the-r-learner-explained-in-seven-layers">The R-Learner, Explained in Seven Layers</h1>
+<p>Paper: <a href="https://arxiv.org/abs/1712.04912">Quasi-Oracle Estimation of Heterogeneous Treatment Effects</a> by Xinkun Nie and Stefan Wager.</p>
+<h2 id="layer-1-what-problem-is-this-paper-solving">Layer 1: What Problem Is This Paper Solving?</h2>
+<p>Paper: <strong>Quasi-Oracle Estimation of Heterogeneous Treatment Effects</strong> by Xinkun Nie and Stefan Wager.</p>
+<p>The paper is about estimating <strong>heterogeneous treatment effects</strong>, also called <strong>CATE</strong>:</p>
+<pre><code class="language-text">Conditional Average Treatment Effect
+</code></pre>
+<p>The authors introduce the <strong>R-learner</strong>, a two-step method:</p>
+<ol>
+<li>First estimate background/nuisance parts of the problem.</li>
+<li>Then use a special residualized loss function to estimate the treatment effect itself.</li>
+</ol>
+<p>Their key claim is that, under some conditions, this can behave almost as well as an <strong>oracle</strong> that already knew those nuisance parts.</p>
+<h3 id="the-basic-data">The Basic Data</h3>
+<p>We observe data like this:</p>
+<pre><code class="language-text">X = features about a person
+W = treatment indicator, usually 0 or 1
+Y = observed outcome
+</code></pre>
+<p>Example:</p>
+<pre><code class="language-text">X = age, income, medical history
+W = whether patient received a drug
+Y = health outcome
+</code></pre>
+<p>The thing we want is not just:</p>
+<pre><code class="language-text">Does the drug work on average?
+</code></pre>
+<p>It is:</p>
+<pre><code class="language-text">For people with features X = x, how much does the drug help?
+</code></pre>
+<p>That target is:</p>
+<pre><code class="language-text">tau(x) = E[Y(1) - Y(0) | X = x]
+</code></pre>
+<p>Read this as:</p>
+<pre><code class="language-text">tau(x) = average treatment effect for people like x
+</code></pre>
+<p>Here:</p>
+<pre><code class="language-text">Y(1) = outcome if treated
+Y(0) = outcome if not treated
+</code></pre>
+<h3 id="the-fundamental-problem">The Fundamental Problem</h3>
+<p>For one person, we only observe one of these outcomes:</p>
+<pre><code class="language-text">If W = 1, we observe Y(1), but not Y(0)
+If W = 0, we observe Y(0), but not Y(1)
+</code></pre>
+<p>So the missing counterfactual is the whole difficulty.</p>
+<h3 id="why-prior-work-appears">Why Prior Work Appears</h3>
+<p>Older methods try to adapt machine learning models to this causal problem. For example, use forests, lasso, boosting, neural nets, or separate treated/control regressions.</p>
+<p>The paper says this literature had useful methods, but no clean general recipe for turning any machine learning method into a good treatment-effect estimator.</p>
+<p>The paper's new idea is:</p>
+<pre><code class="language-text">Do not keep redesigning every ML algorithm for causal inference.
+Instead, redesign the loss function.
+Then use ordinary ML tools to minimize that loss.
+</code></pre>
+<p>That is the big conceptual move.</p>
+<h3 id="why-this-is-harder-than-normal-prediction">Why This Is Harder Than Normal Prediction</h3>
+<p>In normal ML, you predict:</p>
+<pre><code class="language-text">Y from X
+</code></pre>
+<p>But here, predicting <code>Y</code> well is not enough.</p>
+<p>Suppose older patients are more likely to receive a drug, and older patients also have worse outcomes. Then a naive model may think:</p>
+<pre><code class="language-text">drug -&gt; worse outcome
+</code></pre>
+<p>even if the real reason is:</p>
+<pre><code class="language-text">older patients -&gt; more drug
+older patients -&gt; worse outcome
+</code></pre>
+<p>This is called <strong>confounding</strong>.</p>
+<p>So the paper separates the task into two parts:</p>
+<pre><code class="language-text">1. Remove the predictable non-causal parts.
+2. Learn the remaining treatment-effect signal.
+</code></pre>
+<p>That separation is the heart of the R-learner.</p>
+<h3 id="key-concept-from-this-layer">Key Concept From This Layer</h3>
+<p>CATE means:</p>
+<pre><code class="language-text">How much does treatment help or hurt for people with features x?
+</code></pre>
+<p>The core difficulty is:</p>
+<pre><code class="language-text">We never observe both treated and untreated outcomes for the same person.
+</code></pre>
+<h3 id="next-layer">Next Layer</h3>
+<p>Now that CATE is comfortable, the next step is to understand why simple learners such as S-learners and T-learners are natural first attempts, and where they become weak.</p>
+<h2 id="layer-2-s-learner-t-learner-and-why-their-weaknesses-matter">Layer 2: S-Learner, T-Learner, and Why Their Weaknesses Matter</h2>
+<p>Now that CATE is clear, the next question is:</p>
+<pre><code class="language-text">How would we estimate tau(x) in practice?
+</code></pre>
+<p>Two natural first attempts are called the <strong>T-learner</strong> and the <strong>S-learner</strong>.</p>
+<p>They are useful because they show why ordinary prediction is close to the treatment-effect problem, but not exactly the same thing.</p>
+<h3 id="t-learner">T-Learner</h3>
+<p>The T-learner trains two separate models:</p>
+<pre><code class="language-text">Model for treated people:
+mu_1(x) = E[Y | X = x, W = 1]
+
+Model for untreated people:
+mu_0(x) = E[Y | X = x, W = 0]
+</code></pre>
+<p>Then it estimates the treatment effect by subtracting:</p>
+<pre><code class="language-text">tau_hat(x) = mu_1_hat(x) - mu_0_hat(x)
+</code></pre>
+<p>This feels intuitive:</p>
+<pre><code class="language-text">Predict outcome if treated.
+Predict outcome if untreated.
+Subtract.
+</code></pre>
+<h3 id="why-the-t-learner-can-be-weak">Why The T-Learner Can Be Weak</h3>
+<p>The problem is not just that we need two models.</p>
+<p>The deeper problem is:</p>
+<pre><code class="language-text">The treatment effect is a small difference between two separately learned outcome models.
+</code></pre>
+<p>Suppose the true outcomes look like:</p>
+<pre><code class="language-text">Without treatment: 100 + complex function of X
+With treatment:    105 + complex function of X
+</code></pre>
+<p>The treatment effect is only:</p>
+<pre><code class="language-text">5
+</code></pre>
+<p>But the T-learner must learn both large outcome surfaces:</p>
+<pre><code class="language-text">mu_0(x) around 100 + complex X pattern
+mu_1(x) around 105 + complex X pattern
+</code></pre>
+<p>Then it subtracts them to recover the smaller treatment signal.</p>
+<p>That means small errors in the two outcome models can become large errors in the treatment-effect estimate.</p>
+<p>Example:</p>
+<pre><code class="language-text">Good-ish estimates:
+mu_1_hat(x) = 107
+mu_0_hat(x) = 101
+tau_hat(x) = 6
+</code></pre>
+<p>But with small separate modeling errors:</p>
+<pre><code class="language-text">mu_1_hat(x) = 110
+mu_0_hat(x) = 99
+tau_hat(x) = 11
+</code></pre>
+<p>Each outcome model may still look decent as a predictor, but the treatment-effect estimate can be badly distorted.</p>
+<p>So the T-learner weakness is:</p>
+<pre><code class="language-text">Good prediction of mu_1(x) and mu_0(x) does not automatically mean good estimation of tau(x).
+</code></pre>
+<h3 id="s-learner">S-Learner</h3>
+<p>The S-learner trains one model:</p>
+<pre><code class="language-text">Y = f(X, W)
+</code></pre>
+<p>Here <code>W</code> is used as a normal feature:</p>
+<pre><code class="language-text">W = 1 if treated
+W = 0 if untreated
+</code></pre>
+<p>Example:</p>
+<pre><code class="language-text">X = age, income, health score
+W = treatment
+</code></pre>
+<p>The model sees:</p>
+<pre><code class="language-text">(age, income, health score, treatment) -&gt; outcome
+</code></pre>
+<p>To estimate the treatment effect for one person, we ask the same model two questions:</p>
+<pre><code class="language-text">Prediction if W = 1:
+f_hat(x, 1)
+
+Prediction if W = 0:
+f_hat(x, 0)
+</code></pre>
+<p>Then subtract:</p>
+<pre><code class="language-text">tau_hat(x) = f_hat(x, 1) - f_hat(x, 0)
+</code></pre>
+<h3 id="why-the-s-learner-can-be-weak">Why The S-Learner Can Be Weak</h3>
+<p>The weakness is that <code>W</code> is just another feature.</p>
+<p>The model is trained to:</p>
+<pre><code class="language-text">Predict Y well.
+</code></pre>
+<p>It is not directly trained to:</p>
+<pre><code class="language-text">Estimate the causal difference caused by W.
+</code></pre>
+<p>So if <code>X</code> explains most of <code>Y</code>, and treatment only changes <code>Y</code> a little, the model may focus mostly on <code>X</code>.</p>
+<p>Example:</p>
+<pre><code class="language-text">Y depends 95% on health score
+Y depends 5% on treatment
+</code></pre>
+<p>A regularized model, random forest, or neural network may get good prediction accuracy by learning health-score patterns while barely using treatment.</p>
+<p>That can make the treatment-effect estimate:</p>
+<pre><code class="language-text">too small
+too smooth
+or partly ignored
+</code></pre>
+<p>So the S-learner weakness is:</p>
+<pre><code class="language-text">Treatment is included as a feature, but the model's objective is still ordinary prediction.
+</code></pre>
+<h3 id="the-shared-problem">The Shared Problem</h3>
+<p>Both methods use prediction models to indirectly get treatment effects:</p>
+<pre><code class="language-text">T-learner:
+Predict two outcome functions, then subtract.
+
+S-learner:
+Predict one outcome function with W as a feature, then toggle W and subtract.
+</code></pre>
+<p>The shared problem is:</p>
+<pre><code class="language-text">Good prediction of Y does not automatically mean good estimation of tau(x).
+</code></pre>
+<p>That is why the R-learner is introduced.</p>
+<p>It tries to create a learning problem where the target is closer to:</p>
+<pre><code class="language-text">Learn the treatment effect directly.
+</code></pre>
+<p>instead of:</p>
+<pre><code class="language-text">Predict outcomes first, subtract later.
+</code></pre>
+<h3 id="key-concept-from-this-layer_1">Key Concept From This Layer</h3>
+<p>The central lesson is:</p>
+<pre><code class="language-text">Treatment-effect estimation is not just a prediction problem.
+</code></pre>
+<p>Prediction asks:</p>
+<pre><code class="language-text">What will Y be?
+</code></pre>
+<p>CATE asks:</p>
+<pre><code class="language-text">How much would Y change if W changed from 0 to 1 for people like this?
+</code></pre>
+<p>Those are related, but they are not the same objective.</p>
+<h3 id="next-layer_1">Next Layer</h3>
+<p>The R-learner starts by removing two background components:</p>
+<pre><code class="language-text">m(x) = expected outcome given X
+e(x) = probability of treatment given X
+</code></pre>
+<p>These are called nuisance functions. The next layer explains what they mean and why removing them helps isolate the treatment-effect signal.</p>
+<h2 id="layer-3-what-the-r-learner-removes-first">Layer 3: What The R-Learner Removes First</h2>
+<p>The R-learner first estimates two background functions, then builds an objective that isolates the causal signal.</p>
+<p>Those two background functions are:</p>
+<pre><code class="language-text">m(x) = expected outcome given X
+e(x) = probability of treatment given X
+</code></pre>
+<p>They are often called <strong>nuisance functions</strong>.</p>
+<p>That name sounds dismissive, but it does not mean they are unimportant. It means:</p>
+<pre><code class="language-text">They are not the final thing we care about,
+but we need to estimate them well enough to get the final thing right.
+</code></pre>
+<p>The final thing we care about is:</p>
+<pre><code class="language-text">tau(x) = treatment effect for people like x
+</code></pre>
+<h3 id="the-outcome-baseline">The Outcome Baseline</h3>
+<p>The first nuisance function is:</p>
+<pre><code class="language-text">m(x) = E[Y | X = x]
+</code></pre>
+<p>Read this as:</p>
+<pre><code class="language-text">m(x) = expected outcome for people like x
+</code></pre>
+<p>Think of <code>m(x)</code> as the normal expected outcome based on someone's features.</p>
+<p>Example:</p>
+<pre><code class="language-text">X = age, health score, income
+Y = health outcome
+</code></pre>
+<p>Then:</p>
+<pre><code class="language-text">m(x) = expected health outcome for someone with this age, health score, and income
+</code></pre>
+<p>This captures the part of <code>Y</code> that is predictable from <code>X</code>.</p>
+<h3 id="the-propensity-score">The Propensity Score</h3>
+<p>The second nuisance function is:</p>
+<pre><code class="language-text">e(x) = E[W | X = x]
+</code></pre>
+<p>Because <code>W</code> is usually 0 or 1, this means:</p>
+<pre><code class="language-text">e(x) = probability that people like x receive treatment
+</code></pre>
+<p>Example:</p>
+<pre><code class="language-text">Older or sicker patients may be more likely to receive treatment.
+</code></pre>
+<p>Then:</p>
+<pre><code class="language-text">e(x) = probability of receiving treatment for someone with this age, health score, and income
+</code></pre>
+<p>This captures the part of treatment assignment that is predictable from <code>X</code>.</p>
+<h3 id="why-we-need-both">Why We Need Both</h3>
+<p>Treatment-effect learning is polluted by two background patterns:</p>
+<pre><code class="language-text">1. Some people naturally have higher or lower outcomes because of X.
+2. Some people are more or less likely to receive treatment because of X.
+</code></pre>
+<p>The R-learner tries to remove both.</p>
+<p>Instead of working directly with:</p>
+<pre><code class="language-text">Y
+W
+</code></pre>
+<p>it works with residuals:</p>
+<pre><code class="language-text">Y - m(x)
+W - e(x)
+</code></pre>
+<h3 id="outcome-residual">Outcome Residual</h3>
+<p>The first residual is:</p>
+<pre><code class="language-text">Y - m(x)
+</code></pre>
+<p>Read this as:</p>
+<pre><code class="language-text">actual outcome - expected outcome
+</code></pre>
+<p>Or more simply:</p>
+<pre><code class="language-text">outcome surprise
+</code></pre>
+<p>Example:</p>
+<pre><code class="language-text">A patient was expected to have outcome 70.
+The patient actually had outcome 80.
+</code></pre>
+<p>Then:</p>
+<pre><code class="language-text">Y - m(x) = 80 - 70 = 10
+</code></pre>
+<p>That <code>10</code> is the part of the outcome not already explained by their features.</p>
+<h3 id="treatment-residual">Treatment Residual</h3>
+<p>The second residual is:</p>
+<pre><code class="language-text">W - e(x)
+</code></pre>
+<p>Read this as:</p>
+<pre><code class="language-text">actual treatment - expected treatment probability
+</code></pre>
+<p>Or more simply:</p>
+<pre><code class="language-text">treatment surprise
+</code></pre>
+<p>Example:</p>
+<pre><code class="language-text">A patient had 80% chance of being treated.
+The patient was treated.
+</code></pre>
+<p>Then:</p>
+<pre><code class="language-text">W - e(x) = 1 - 0.8 = 0.2
+</code></pre>
+<p>That <code>0.2</code> is the part of treatment assignment not already expected from their features.</p>
+<p>If the patient was not treated:</p>
+<pre><code class="language-text">W - e(x) = 0 - 0.8 = -0.8
+</code></pre>
+<p>That would be a bigger treatment surprise, because the patient was likely to be treated but was not.</p>
+<h3 id="the-high-level-idea">The High-Level Idea</h3>
+<p>The R-learner asks:</p>
+<pre><code class="language-text">After removing what X already explains,
+is unexpected treatment associated with unexpected outcome?
+</code></pre>
+<p>That is much closer to the causal signal than simply predicting <code>Y</code>.</p>
+<p>So instead of:</p>
+<pre><code class="language-text">Use X and W to predict Y.
+</code></pre>
+<p>the R-learner moves toward:</p>
+<pre><code class="language-text">Use treatment surprise to explain outcome surprise.
+</code></pre>
+<h3 id="key-concept-from-this-layer_2">Key Concept From This Layer</h3>
+<p>The R-learner does not start by directly predicting treated and untreated outcomes.</p>
+<p>It first subtracts away:</p>
+<pre><code class="language-text">1. predictable outcome patterns
+2. predictable treatment assignment patterns
+</code></pre>
+<p>Then it learns treatment effects from what remains.</p>
+<h3 id="next-layer_2">Next Layer</h3>
+<p>The next layer explains how this residual idea becomes the central R-learner formula:</p>
+<pre><code class="language-text">Y - m(x) approx tau(x) * (W - e(x))
+</code></pre>
+<p>That formula is the bridge from intuition to the R-loss.</p>
+<h2 id="layer-4-robinson-decomposition-and-what-the-r-learner-adds">Layer 4: Robinson Decomposition And What The R-Learner Adds</h2>
+<p>The R-learner is not inventing its formula from nowhere.</p>
+<p>Its starting inspiration is <strong>Robinson decomposition</strong>, from partially linear regression.</p>
+<h3 id="robinsons-setup">Robinson's Setup</h3>
+<p>Robinson starts with a model like:</p>
+<pre><code class="language-text">Y = theta * W + g(X) + error
+</code></pre>
+<p>Here:</p>
+<pre><code class="language-text">Y        = outcome
+W        = treatment or variable of interest
+X        = features / controls
+g(X)     = baseline outcome pattern explained by X
+theta    = constant treatment effect
+</code></pre>
+<p>The problem is that <code>W</code> may be related to <code>X</code>.</p>
+<p>So instead of directly comparing:</p>
+<pre><code class="language-text">Y and W
+</code></pre>
+<p>Robinson residualizes both sides.</p>
+<p>Define:</p>
+<pre><code class="language-text">m(X) = E[Y | X]
+e(X) = E[W | X]
+</code></pre>
+<p>Then subtract the part explained by <code>X</code>:</p>
+<pre><code class="language-text">Y - m(X)
+W - e(X)
+</code></pre>
+<p>This gives:</p>
+<pre><code class="language-text">Y - m(X) = theta * (W - e(X)) + error
+</code></pre>
+<p>Read this as:</p>
+<pre><code class="language-text">leftover outcome = constant treatment effect * leftover treatment + error
+</code></pre>
+<p>So <code>theta</code> is the slope between unexpected treatment and unexpected outcome, after removing what <code>X</code> already explains.</p>
+<h3 id="the-r-learner-move">The R-Learner Move</h3>
+<p>The paper's core conceptual move is:</p>
+<pre><code class="language-text">Replace the constant theta with a function tau(X).
+</code></pre>
+<p>So Robinson's equation:</p>
+<pre><code class="language-text">Y - m(X) = theta * (W - e(X)) + error
+</code></pre>
+<p>becomes:</p>
+<pre><code class="language-text">Y - m(X) approx tau(X) * (W - e(X)) + error
+</code></pre>
+<p>Now the treatment effect can vary by features:</p>
+<pre><code class="language-text">theta    = one treatment effect for everyone
+tau(X)   = treatment effect for people with features X
+</code></pre>
+<p>At the core idea level, yes:</p>
+<pre><code class="language-text">The R-learner replaces theta with tau(X).
+</code></pre>
+<p>But the paper's contribution is not only that replacement.</p>
+<p>It turns the replacement into a practical machine-learning recipe.</p>
+<h3 id="what-the-paper-adds">What The Paper Adds</h3>
+<p>The paper adds five important pieces.</p>
+<h4 id="1-it-builds-a-loss-function-for-taux">1. It Builds A Loss Function For Tau(X)</h4>
+<p>Starting from:</p>
+<pre><code class="language-text">Y - m(X) approx tau(X) * (W - e(X))
+</code></pre>
+<p>the error is:</p>
+<pre><code class="language-text">(Y - m(X)) - tau(X) * (W - e(X))
+</code></pre>
+<p>and the squared loss is:</p>
+<pre><code class="language-text">[(Y - m(X)) - tau(X) * (W - e(X))]^2
+</code></pre>
+<p>Then average it over all training examples:</p>
+<pre><code class="language-text">minimize average of [(Y_i - m(X_i)) - tau(X_i) * (W_i - e(X_i))]^2
+</code></pre>
+<p>This is the R-loss.</p>
+<p>It is basically mean squared error, but applied to a residualized causal learning problem.</p>
+<p>The model does not know <code>tau(X)</code> before training.</p>
+<p><code>tau(X)</code> is the unknown function being optimized, just like <code>f(X)</code> is unknown in ordinary prediction.</p>
+<h4 id="2-it-lets-taux-be-learned-by-flexible-ml">2. It Lets Tau(X) Be Learned By Flexible ML</h4>
+<p>The paper does not require <code>tau(X)</code> to be a simple linear formula.</p>
+<p>In principle, <code>tau(X)</code> can be learned using methods such as:</p>
+<pre><code class="language-text">forests
+lasso
+boosting
+neural networks
+other supervised learning tools
+</code></pre>
+<p>The key point is that these tools are trained through the residualized loss, not through ordinary prediction of <code>Y</code>.</p>
+<p>So the ML method is pointed at:</p>
+<pre><code class="language-text">treatment-effect learning
+</code></pre>
+<p>instead of only:</p>
+<pre><code class="language-text">outcome prediction
+</code></pre>
+<h4 id="3-it-estimates-mx-and-ex-then-plugs-them-in">3. It Estimates m(X) And e(X), Then Plugs Them In</h4>
+<p>The clean formula uses:</p>
+<pre><code class="language-text">m(X) = E[Y | X]
+e(X) = E[W | X]
+</code></pre>
+<p>If an oracle gave us the true <code>m(X)</code> and <code>e(X)</code>, learning <code>tau(X)</code> would be easier.</p>
+<p>But in real data, we do not know them.</p>
+<p>So the R-learner first estimates:</p>
+<pre><code class="language-text">m_hat(X)
+e_hat(X)
+</code></pre>
+<p>Then it uses:</p>
+<pre><code class="language-text">Y - m_hat(X)
+W - e_hat(X)
+</code></pre>
+<p>inside the R-loss.</p>
+<p>The practical loss becomes:</p>
+<pre><code class="language-text">minimize average of [(Y_i - m_hat(X_i)) - tau(X_i) * (W_i - e_hat(X_i))]^2
+</code></pre>
+<h4 id="4-it-uses-sample-splitting-cross-fitting">4. It Uses Sample Splitting / Cross-Fitting</h4>
+<p>There is a danger:</p>
+<pre><code class="language-text">If the same data is used to estimate m(X), e(X), and tau(X),
+the errors can leak into each other.
+</code></pre>
+<p>For example, the nuisance models might overfit the training data.</p>
+<p>Then the residuals:</p>
+<pre><code class="language-text">Y - m_hat(X)
+W - e_hat(X)
+</code></pre>
+<p>may look artificially clean on that same data.</p>
+<p>Sample splitting helps by estimating nuisance functions on one part of the data, then using their predictions on another part.</p>
+<p>Cross-fitting repeats this across folds so all observations can still be used efficiently.</p>
+<p>The purpose is:</p>
+<pre><code class="language-text">Reduce contamination from nuisance-estimation errors.
+</code></pre>
+<h4 id="5-it-shows-quasi-oracle-behavior">5. It Shows Quasi-Oracle Behavior</h4>
+<p>An oracle would know the true nuisance functions:</p>
+<pre><code class="language-text">m(X)
+e(X)
+</code></pre>
+<p>The real R-learner only has:</p>
+<pre><code class="language-text">m_hat(X)
+e_hat(X)
+</code></pre>
+<p>The quasi-oracle claim is:</p>
+<pre><code class="language-text">If m_hat(X) and e_hat(X) are good enough,
+then learning tau(X) can be nearly as good as if m(X) and e(X) were known.
+</code></pre>
+<p>It does not mean the method is magically perfect.</p>
+<p>It means the second-stage treatment-effect learner can be relatively insensitive to first-stage nuisance errors, under the paper's assumptions.</p>
+<h3 id="key-concept-from-this-layer_3">Key Concept From This Layer</h3>
+<p>Robinson gives the residualized skeleton:</p>
+<pre><code class="language-text">Y - m(X) = theta * (W - e(X)) + error
+</code></pre>
+<p>The R-learner turns it into:</p>
+<pre><code class="language-text">Y - m(X) approx tau(X) * (W - e(X)) + error
+</code></pre>
+<p>The full contribution is:</p>
+<pre><code class="language-text">theta -&gt; tau(X)
++ residualized loss
++ flexible ML
++ nuisance estimation
++ sample splitting / cross-fitting
++ quasi-oracle theory
+</code></pre>
+<h2 id="layer-5-optimizing-the-r-loss-weights-and-tuning">Layer 5: Optimizing The R-Loss, Weights, And Tuning</h2>
+<p>Layer 4 explained the R-loss:</p>
+<pre><code class="language-text">minimize average of [(Y_i - m_hat(X_i)) - tau(X_i) * (W_i - e_hat(X_i))]^2
+</code></pre>
+<p>This layer explains what happens next:</p>
+<pre><code class="language-text">1. How do we optimize this loss?
+2. Why does W - e_hat(X) act like a weight?
+3. How do we tune the model?
+</code></pre>
+<h3 id="1-optimizing-the-r-loss">1. Optimizing The R-Loss</h3>
+<p>The R-learner is not one specific model.</p>
+<p>It is a way to create a treatment-effect learning problem.</p>
+<p>Once we have:</p>
+<pre><code class="language-text">Y_i - m_hat(X_i)
+W_i - e_hat(X_i)
+</code></pre>
+<p>we can train many different kinds of models for:</p>
+<pre><code class="language-text">tau(X)
+</code></pre>
+<p>For example:</p>
+<pre><code class="language-text">linear models
+lasso / penalized regression
+kernel methods
+boosting
+forests
+neural networks
+</code></pre>
+<p>The important point is:</p>
+<pre><code class="language-text">The ML model is not trained to predict Y.
+It is trained to minimize the R-loss.
+</code></pre>
+<p>So the learner is aimed directly at estimating treatment-effect heterogeneity.</p>
+<h3 id="2-why-w-e_hatx-acts-like-a-weight">2. Why W - e_hat(X) Acts Like A Weight</h3>
+<p>The R-loss is:</p>
+<pre><code class="language-text">[(Y_i - m_hat(X_i)) - tau(X_i) * (W_i - e_hat(X_i))]^2
+</code></pre>
+<p>The fact that <code>W - e_hat(X)</code> acts like a weight is not a separate modeling trick.</p>
+<p>It comes from rewriting the R-loss.</p>
+<p>Define:</p>
+<pre><code class="language-text">residual outcome   = Y_i - m_hat(X_i)
+residual treatment = W_i - e_hat(X_i)
+</code></pre>
+<p>Then the loss is:</p>
+<pre><code class="language-text">[residual outcome - tau(X_i) * residual treatment]^2
+</code></pre>
+<p>If the residual treatment is not zero, we can factor it out:</p>
+<pre><code class="language-text">(residual treatment)^2
+*
+[residual outcome / residual treatment - tau(X_i)]^2
+</code></pre>
+<p>Written with the original symbols:</p>
+<pre><code class="language-text">(W_i - e_hat(X_i))^2
+*
+[(Y_i - m_hat(X_i)) / (W_i - e_hat(X_i)) - tau(X_i)]^2
+</code></pre>
+<p>This shows two things.</p>
+<p>First, the pseudo-outcome is:</p>
+<pre><code class="language-text">(Y_i - m_hat(X_i)) / (W_i - e_hat(X_i))
+</code></pre>
+<p>Second, the weight is:</p>
+<pre><code class="language-text">(W_i - e_hat(X_i))^2
+</code></pre>
+<p>So observations with larger treatment residuals get more weight.</p>
+<h3 id="why-this-is-useful-in-the-proof">Why This Is Useful In The Proof</h3>
+<p>The paper's theory uses the oracle version first, where the true nuisance functions are known:</p>
+<pre><code class="language-text">m*(X)
+e*(X)
+tau*(X)
+</code></pre>
+<p>The oracle R-loss is:</p>
+<pre><code class="language-text">L(tau) = E{[(Y - m*(X)) - tau(X)(W - e*(X))]^2}
+</code></pre>
+<p>From the Robinson decomposition:</p>
+<pre><code class="language-text">E[Y - m*(X) | X, W] = tau*(X)(W - e*(X))
+</code></pre>
+<p>So we can write:</p>
+<pre><code class="language-text">Y - m*(X) = tau*(X)(W - e*(X)) + noise
+</code></pre>
+<p>where the noise has conditional mean zero after conditioning on <code>X</code> and <code>W</code>.</p>
+<p>Plug this into the oracle loss:</p>
+<pre><code class="language-text">[(Y - m*(X)) - tau(X)(W - e*(X))]^2
+</code></pre>
+<p>becomes:</p>
+<pre><code class="language-text">[noise + (tau*(X) - tau(X))(W - e*(X))]^2
+</code></pre>
+<p>Expanding the square gives:</p>
+<pre><code class="language-text">noise^2
++ [(tau*(X) - tau(X))(W - e*(X))]^2
++ cross term
+</code></pre>
+<p>The cross term vanishes in expectation because the noise has conditional mean zero.</p>
+<p>So the only part that depends on <code>tau</code> is:</p>
+<pre><code class="language-text">E[(W - e*(X))^2 (tau(X) - tau*(X))^2]
+</code></pre>
+<p>This is the regret term in the paper.</p>
+<p>That is why the weighted form is useful:</p>
+<pre><code class="language-text">The R-loss separates unavoidable outcome noise from treatment-effect error.
+</code></pre>
+<p>The unavoidable noise is just a constant.</p>
+<p>The part we can improve is a weighted squared error for <code>tau(X)</code>.</p>
+<p>In the appendix, this lets the authors connect the R-learner objective to a weighted regression problem. The data distribution is effectively weighted by:</p>
+<pre><code class="language-text">(W - e*(X))^2
+</code></pre>
+<p>Then they can adapt existing regression theory to prove the quasi-oracle result.</p>
+<h3 id="why-the-weight-makes-sense">Why The Weight Makes Sense</h3>
+<p>If:</p>
+<pre><code class="language-text">W_i - e_hat(X_i)
+</code></pre>
+<p>is close to zero, then the person's actual treatment was close to what we already expected from <code>X</code>.</p>
+<p>That observation has little treatment surprise.</p>
+<p>It is less informative about the treatment effect.</p>
+<p>If:</p>
+<pre><code class="language-text">W_i - e_hat(X_i)
+</code></pre>
+<p>is large in magnitude, then the person's actual treatment was more surprising given <code>X</code>.</p>
+<p>That observation gives stronger information about how unexpected treatment relates to unexpected outcome.</p>
+<p>So the R-learner gives it more weight.</p>
+<h3 id="3-cross-validation-and-tuning">3. Cross-Validation And Tuning</h3>
+<p>A practical benefit of the R-loss is that it gives a real objective for choosing among treatment-effect models.</p>
+<p>For example, suppose we are choosing:</p>
+<pre><code class="language-text">regularization strength
+tree depth
+number of boosting rounds
+kernel bandwidth
+</code></pre>
+<p>We can compare candidate models by their held-out R-loss:</p>
+<pre><code class="language-text">average of [(Y_i - m_hat(X_i)) - tau_hat(X_i) * (W_i - e_hat(X_i))]^2
+</code></pre>
+<p>This is useful because treatment effects are not directly observed.</p>
+<p>We cannot normally validate <code>tau_hat(X)</code> by comparing it to the true treatment effect for each person.</p>
+<p>But the R-loss gives a proxy target:</p>
+<pre><code class="language-text">Does tau_hat(X) explain leftover outcome using leftover treatment?
+</code></pre>
+<p>That lets the R-learner use familiar ML workflows:</p>
+<pre><code class="language-text">train
+validate
+tune
+select model
+</code></pre>
+<p>without pretending that individual treatment effects are directly observed.</p>
+<h3 id="key-concept-from-this-layer_4">Key Concept From This Layer</h3>
+<p>The R-loss is useful because it turns CATE estimation into an ML-style optimization problem.</p>
+<p>It also reveals a weighted learning problem:</p>
+<pre><code class="language-text">pseudo-outcome = (Y - m_hat(X)) / (W - e_hat(X))
+weight         = (W - e_hat(X))^2
+</code></pre>
+<p>Examples with stronger treatment surprise get more influence when learning <code>tau(X)</code>.</p>
+<h2 id="layer-6-comparisons-theory-and-experiments">Layer 6: Comparisons, Theory, And Experiments</h2>
+<p>Layer 5 explained how the R-loss becomes a practical optimization problem.</p>
+<p>The remaining major parts of the paper are:</p>
+<pre><code class="language-text">1. How the R-learner compares to other learners.
+2. What the quasi-oracle theory says.
+3. What the experiments test.
+</code></pre>
+<h3 id="1-broader-positioning-against-other-learners">1. Broader Positioning Against Other Learners</h3>
+<p>We already covered S-learners and T-learners in Layer 2.</p>
+<p>So Layer 6 does not need to explain them again.</p>
+<p>The broader point in the paper is that many earlier methods differ in:</p>
+<pre><code class="language-text">how they construct a learning problem for tau(X)
+</code></pre>
+<p>Some methods estimate treatment effects indirectly, by first estimating outcome functions.</p>
+<p>Other methods modify tree or forest splitting rules so the model searches for treatment-effect heterogeneity.</p>
+<p>The R-learner's positioning is different:</p>
+<pre><code class="language-text">It creates a residualized objective for tau(X) itself.
+</code></pre>
+<p>So the main comparison is not just:</p>
+<pre><code class="language-text">S-learner versus T-learner versus R-learner
+</code></pre>
+<p>It is:</p>
+<pre><code class="language-text">indirect treatment-effect estimation
+versus
+direct residualized treatment-effect estimation
+</code></pre>
+<p>This matters because the R-loss can be paired with many ML tools.</p>
+<pre><code class="language-text">The R-learner is a framework, not one specific algorithm.
+</code></pre>
+<p>That is why the paper can discuss R-learning with different model classes, such as penalized regression, kernels, and boosting.</p>
+<p>The claim is that the residualized objective is more directly aligned with estimating <code>tau(X)</code> than objectives focused mainly on predicting <code>Y</code>.</p>
+<h3 id="2-the-quasi-oracle-theory">2. The Quasi-Oracle Theory</h3>
+<p>The theory asks:</p>
+<pre><code class="language-text">How much do errors in m_hat(X) and e_hat(X) hurt the final tau_hat(X)?
+</code></pre>
+<p>An oracle learner would know:</p>
+<pre><code class="language-text">m(X)
+e(X)
+</code></pre>
+<p>and would only need to learn:</p>
+<pre><code class="language-text">tau(X)
+</code></pre>
+<p>The real learner must estimate all three:</p>
+<pre><code class="language-text">m_hat(X)
+e_hat(X)
+tau_hat(X)
+</code></pre>
+<p>The quasi-oracle result says that, under conditions, the real learner can behave nearly like the oracle learner.</p>
+<p>The important intuition is:</p>
+<pre><code class="language-text">Small nuisance-function errors do not necessarily destroy tau(X) estimation.
+</code></pre>
+<p>This is because the residualized objective is designed so that first-stage errors are less damaging than they would be in a naive plug-in method.</p>
+<p>That does not mean nuisance estimation is unimportant.</p>
+<p>It means the method is constructed so that <code>tau(X)</code> learning can be stable when <code>m_hat(X)</code> and <code>e_hat(X)</code> are accurate enough.</p>
+<h3 id="3-experiments">3. Experiments</h3>
+<p>The experiments check whether the R-learner works well in practice, not only in theory.</p>
+<p>They compare R-learning against other CATE methods across simulated settings where the true treatment effect is known.</p>
+<p>Simulation is useful here because in real data we usually do not know the true:</p>
+<pre><code class="language-text">tau(X)
+</code></pre>
+<p>In a simulation, the authors can generate data with a known treatment-effect function, run different learners, and compare:</p>
+<pre><code class="language-text">tau_hat(X)
+</code></pre>
+<p>against the true:</p>
+<pre><code class="language-text">tau(X)
+</code></pre>
+<p>The experiments test different implementations of the R-learner, such as versions based on:</p>
+<pre><code class="language-text">penalized regression
+kernel methods
+boosting
+</code></pre>
+<p>The purpose is to show that the R-loss is not tied to only one model type.</p>
+<p>It can be used as a general framework for training treatment-effect estimators.</p>
+<h3 id="key-concept-from-this-layer_5">Key Concept From This Layer</h3>
+<p>The rest of the paper is about validating the R-learner from three angles:</p>
+<pre><code class="language-text">comparison: why this objective is different from earlier learners
+theory: why nuisance estimation errors can be controlled
+experiments: whether the method performs well in practice
+</code></pre>
+<p>The paper's broader message is:</p>
+<pre><code class="language-text">Use residualization to turn treatment-effect estimation into a direct ML objective,
+then use modern ML tools to optimize that objective.
+</code></pre>
+<h2 id="layer-7-remaining-details-in-the-paper">Layer 7: Remaining Details In The Paper</h2>
+<p>By now, the main idea of the paper is in place:</p>
+<pre><code class="language-text">Use residualization to learn tau(X) directly.
+</code></pre>
+<p>The remaining parts of the paper mostly answer:</p>
+<pre><code class="language-text">When is this valid?
+How strong is the theory?
+How is it implemented?
+How does it perform in experiments?
+</code></pre>
+<h3 id="1-formal-assumptions">1. Formal Assumptions</h3>
+<p>The method depends on standard causal assumptions.</p>
+<p>The first is <strong>unconfoundedness</strong>:</p>
+<pre><code class="language-text">{Y(0), Y(1)} independent of W given X
+</code></pre>
+<p>Read this as:</p>
+<pre><code class="language-text">Once we control for X, treatment assignment is as good as random.
+</code></pre>
+<p>This is what lets us interpret differences between treated and untreated people with the same <code>X</code> as causal.</p>
+<p>The second is <strong>overlap</strong>:</p>
+<pre><code class="language-text">0 &lt; e(X) &lt; 1
+</code></pre>
+<p>Read this as:</p>
+<pre><code class="language-text">For every kind of person, there is some chance of being treated
+and some chance of not being treated.
+</code></pre>
+<p>If everyone with some feature pattern is always treated, then we have no untreated comparison group for that kind of person.</p>
+<p>The third group of assumptions is about function classes and estimation quality.</p>
+<p>The paper needs conditions under which:</p>
+<pre><code class="language-text">m_hat(X) is close enough to m(X)
+e_hat(X) is close enough to e(X)
+tau_hat(X) can be learned in the chosen model class
+</code></pre>
+<p>These assumptions are technical, but their purpose is simple:</p>
+<pre><code class="language-text">Make sure nuisance-estimation error does not overwhelm treatment-effect learning.
+</code></pre>
+<h3 id="2-exact-theorem-statements">2. Exact Theorem Statements</h3>
+<p>The central theory compares two learners.</p>
+<p>The first is the <strong>oracle learner</strong>:</p>
+<pre><code class="language-text">It knows the true m(X) and e(X).
+</code></pre>
+<p>The second is the real R-learner:</p>
+<pre><code class="language-text">It uses m_hat(X) and e_hat(X).
+</code></pre>
+<p>The quasi-oracle theorem says that, under the paper's conditions, the real learner's performance can be close to the oracle learner's performance.</p>
+<p>The key error being studied is a weighted squared error:</p>
+<pre><code class="language-text">E[(W - e(X))^2 (tau_hat(X) - tau(X))^2]
+</code></pre>
+<p>This is why the weighted-regression view matters.</p>
+<p>The theorem is not saying:</p>
+<pre><code class="language-text">The R-learner is always accurate.
+</code></pre>
+<p>It is saying:</p>
+<pre><code class="language-text">If the nuisance functions are estimated well enough,
+then the extra cost of estimating them can be small.
+</code></pre>
+<h3 id="3-implementation-variants">3. Implementation Variants</h3>
+<p>The paper treats the R-learner as a framework.</p>
+<p>Different implementations come from choosing different model classes for <code>tau(X)</code>.</p>
+<p>Examples include:</p>
+<pre><code class="language-text">R-lasso
+R-kernel methods
+R-boosting
+</code></pre>
+<p>The shared structure is always:</p>
+<pre><code class="language-text">1. Estimate m(X)
+2. Estimate e(X)
+3. Form residuals
+4. Learn tau(X) by minimizing the R-loss
+</code></pre>
+<p>What changes is the model used in step 4.</p>
+<p>This is part of the paper's practical appeal:</p>
+<pre><code class="language-text">The causal idea is in the loss function,
+not locked inside one specific algorithm.
+</code></pre>
+<h3 id="4-simulation-design">4. Simulation Design</h3>
+<p>The experiments use simulated data because, in simulation, the true treatment effect is known.</p>
+<p>That lets the authors compare:</p>
+<pre><code class="language-text">tau_hat(X)
+</code></pre>
+<p>against:</p>
+<pre><code class="language-text">true tau(X)
+</code></pre>
+<p>This is usually impossible in real observational data, because we do not observe both potential outcomes for the same person.</p>
+<p>The simulations vary things like:</p>
+<pre><code class="language-text">how complex the baseline outcome function is
+how complex the treatment effect is
+how treatment assignment depends on X
+how much noise is in Y
+</code></pre>
+<p>The goal is to test whether the R-learner can recover treatment-effect heterogeneity better than competing methods.</p>
+<h3 id="5-empirical-application-material">5. Empirical / Application Material</h3>
+<p>If the paper includes a real-data example, its role is different from the simulations.</p>
+<p>In real data, the true <code>tau(X)</code> is not known.</p>
+<p>So the point is not to prove exact accuracy.</p>
+<p>The point is to show:</p>
+<pre><code class="language-text">how the method behaves on a realistic dataset
+what kinds of heterogeneity it finds
+whether the results look practically interpretable
+</code></pre>
+<p>Real-data examples are useful, but they cannot validate CATE estimates as directly as simulations.</p>
+<h3 id="6-appendix-proofs">6. Appendix Proofs</h3>
+<p>The appendix fills in the mathematical details behind the theory.</p>
+<p>The main proof pattern is:</p>
+<pre><code class="language-text">1. Start with the oracle R-loss.
+2. Show its excess risk equals weighted squared error in tau(X).
+3. Replace m(X), e(X) with m_hat(X), e_hat(X).
+4. Bound the extra terms caused by nuisance estimation.
+5. Show those extra terms are small under the assumptions.
+</code></pre>
+<p>The most important cancellation comes from:</p>
+<pre><code class="language-text">E[W - e(X) | X] = 0
+</code></pre>
+<p>This means:</p>
+<pre><code class="language-text">after conditioning on X, the treatment residual averages to zero.
+</code></pre>
+<p>That cancellation is why first-stage nuisance errors enter more weakly than they would in a naive method.</p>
+<h3 id="key-concept-from-this-layer_6">Key Concept From This Layer</h3>
+<p>The remaining details do not change the core idea.</p>
+<p>They support it:</p>
+<pre><code class="language-text">assumptions tell us when CATE is identifiable
+theorems tell us when R-learning is quasi-oracle
+implementations show the framework is flexible
+simulations test accuracy when tau(X) is known
+applications show how it behaves on real data
+appendix proofs justify the error bounds
+</code></pre>
+<p>The paper's final message is:</p>
+<pre><code class="language-text">Residualization gives a direct objective for heterogeneous treatment effects,
+and under the right assumptions this objective can behave almost like an oracle method.
+</code></pre>
+  <footer><a href="../index.html">Manjit Ullal</a></footer>
+</main>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters: [
+    {left: '\\[', right: '\\]', display: true},
+    {left: '\\(', right: '\\)', display: false}]})"></script>
+</body>
+</html>

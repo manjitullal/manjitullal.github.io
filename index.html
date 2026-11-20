@@ -1,282 +1,211 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Manjit's Portfolio</title>
-    <meta name="description" content="">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="robots" content="all,follow">
-    <!-- Bootstrap CSS-->
-    <link rel="stylesheet" href="vendor/bootstrap/css/bootstrap.min.css">
-    <!-- Font Awesome CSS-->
-    <link rel="stylesheet" href="vendor/font-awesome/css/font-awesome.min.css">
-    <!-- Google fonts - Montserrat for headings, Cardo for copy-->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat:400,700|Cardo:400,400italic,700">
-    <!-- Lightbox-->
-    <link rel="stylesheet" href="vendor/lightbox2/css/lightbox.min.css">
-    <!-- theme stylesheet-->
-    <link rel="stylesheet" href="css/style.default.css" id="theme-stylesheet">
-    <!-- Custom stylesheet - for your changes-->
-    <link rel="stylesheet" href="css/custom.css">
-    <!-- Favicon-->
-    <link rel="shortcut icon" href="img/favicon.png">
-    <!-- Leaflet CSS - For the map-->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.4.0/leaflet.css">
-    <!-- Tweaks for older IEs--><!--[if lt IE 9]>
-        <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script><![endif]-->
-  </head>
-  <body>
-    <section id="intro" style="background-image: url('img/p2.jpg');" class="intro">       
-      <div class="overlay"></div>
-      <div class="content">
-        <div class="container clearfix">
-          <div class="row">
-            <div class="col-lg-8 col-md-12 mx-auto">
-              
-              <h1  style="text-align:center">Manjit Ullal.</h1>
-              <p class="italic"  style="text-align:center">Data Scientist | Machine Learning Engineer | Researcher.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-    <!-- intro end-->
-    <!-- navbar-->
-    <header class="header">
-      <nav class="navbar navbar-expand-lg">
-        <div class="container"><a href="#intro" class="navbar-brand link-scroll"></a>
-          <button type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler navbar-toggler-right"><i class="fa fa-bars"></i></button>
-          <div id="navbarSupportedContent" class="collapse navbar-collapse">
-            <ul class="navbar-nav ml-auto">
-              <li class="nav-item"><a href="#intro" class="nav-link link-scroll">Home</a></li>
-              <li class="nav-item"><a href="#about" class="nav-link link-scroll">About </a></li>
-              <li class="nav-item"><a href="#skills" class="nav-link link-scroll">Skills</a></li>
-              <li class="nav-item"><a href="#projects" class="nav-link link-scroll">Projects</a></li>
-              <li class="nav-item"><a href="#blog" class="nav-link link-scroll">Blog</a></li>
-              <li class="nav-item"><a href="#contact" class="nav-link link-scroll">Contact</a></li>
-            </ul>
-          </div>
-        </div>
-      </nav>
-    </header>
-    <!-- about-->
-    <section id="about" class="text">
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-6">
-            <h2 class="heading">About me</h2>
-            <p class="lead"></p>
-            <p>Tycho Brahe in the 15th century carefully measured the position of planets. Even though his geocentric model of the world was not correct the act of collecting the data through careful observation emphasized the importance of data in Science. Johannes Kepler looked at the Brahe's measurements and saw a pattern. He modelled that the orbit of the planets around the Sun is not in perfect circles but an ellipse. This was a revelation in Physics. Fast forward, we are living in 21st century, where we have abundance of data. All we need is a careful eye for detail and creative imagination to find the patterns in the data. </p>
-            <p>I am passionate about Data Science, Machine Learning and Artificial Intelligence. I believe every field and every person can leverage AI for their benefit. Not all problems can be solved using AI. AI certainly will unlock new ways of thinking about the problem and arriving at the solution. Feel free to message me on LinkedIn if you have a position or want to understand my work. I am continually updating my skill set and therefore I can bring something new to the table every time, be it professionally  or personally.</p>
-          </div>
-          <div class="col-md-4 mx-auto">
-            <p><img src="img/mj-green.jpg" alt="" class="img-fluid rounded"></p>
-          </div>
-        </div>
-      </div>
-    </section>
-    <!-- about end-->
-    <!-- Services-->
-    <section id="skills" style="background-color: #eee">
-      <div class="container">
-        <div class="row services">
-          <div class="col-lg-12">
-            <h2 class="heading">Skills</h2>
-            <div class="row">
-              <div class="col-md-4">
-                <div class="box">
-                  <div class="icon"><i class="fa fa-language"></i></div>
-                  <h5>Languages</h5>
-                  <p>Python, R, JavaScript</p>
-                </div>
-              </div>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manjit Ullal</title>
+  <meta name="description" content="Manjit Ullal — Data Scientist working on ads ranking, recommendation, and causal inference.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
 
-              <div class="col-md-4">
-                <div class="box">
-                  <div class="icon"><i class="fa fa-cogs"></i></div>
-                  <h5>Machine Learning</h5>
-                  <p>Supervised Learning: </p>
-                  <p>Linear regression, Logistic regression, Ridge regression, Elastic Net, SVM, KNN, Naive Bayes, Random Forest, Ensemble Methods, XgBoost</p>                  
-                  <p>Unsupervised Learning: </p>
-                  <p>Gaussian mixture models, Clustering, Kmeans, PCA, SVD, Expectation Maximization</p>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="box">
-                  <div class="icon"><i class="fa fa-cogs"></i></div>
-                  <h5>Deep Learning</h5>
-                  <p>Computer Vision: </p>
-                  <p>CNN, YOLO, Resnet</p>
-                  <p>Natural Language: </p>
-                  <p>RNN, LSTM, GRU, BERT, Naive Bayes</p>
-                  <p></p>
-                </div>
-              </div>
+  <header>
+    <img class="avatar" src="img/me.jpg" alt="Photo of Manjit Ullal">
+    <h1>Manjit Ullal</h1>
+    <p class="tagline">I build machine learning models that decide what to show, to whom, and whether it actually helped.</p>
+    <div class="links">
+      <a href="https://github.com/manjitullal">GitHub</a>
+      <a href="https://www.linkedin.com/in/manjit-ullal/">LinkedIn</a>
+      <a href="Manjitgullal.pdf">CV</a>
+      <a href="#" id="email" onclick="revealEmail(event)">Email (click to reveal)</a>
+    </div>
+  </header>
 
-              <div class="col-md-4">
-                <div class="box">
-                  <div class="icon"><i class="fa fa-cubes"></i></div>
-                  <h5>Framework and Libraries</h5>
-                  <p>Pytorch, Tensorflow & Keras.</p>
-                  <p>Flask</p>
-                  <p></p>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="box">
-                  <div class="icon"><i class="fa fa-cog"></i></div>
-                  <h5>Technologies</h5>
-                  <p>Git, Docker, Kubernetes</p>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="box">
-                  <div class="icon"><i class="fa fa-cloud"></i></div>
-                  <h5>Cloud</h5>
-                  <p>AWS, EC2, SageMaker, Lambda</p>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="box">
-                  <div class="icon"><i class="fa fa-line-chart"></i></div>
-                  <h5>Tools</h5>
-                  <p>Tableau</p>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="box">
-                  <div class="icon"><i class="fa fa-database"></i></div>
-                  <h5>Database</h5>
-                  <p>MySql, Postgre, Mongodb, Oracle</p>
-                </div>
-              </div>
+  <hr>
 
+  <p>
+    I am a Data Scientist at Amazon in Seattle. My work sits at the intersection of
+    ads ranking, recommendation systems, and causal inference: estimating purchase rates
+    (CTR and CVR), measuring the incremental value of an ad placement, and turning
+    those models into production systems on Amazon Search and Product Detail Pages.
+    Before that I spent three years building recommendation systems for advertisers in
+    Amazon Advertising, and before that I did a Master's in Data Science at Northeastern.
+  </p>
 
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-    <!-- Services end-->
-    
-    <!-- Portfolio / gallery-->
-    <section id="projects" class="gallery">
-      <div class="container clearfix">
-        <div class="row">
-          <div class="col-lg-12">
-            <div class="row">
-              <div class="col-md-12 col-lg-8">
-                <h2 class="heading">Projects</h2>                
-              </div>
-            </div>
-            <p ><strong>Classic Machine Learning</strong></p>
-            <div class="row">
-              <div class="col-md-4">                
-                <p><strong>Title:</strong> Implementation of Machine Learning Algorithms by scratch.</p>
-                <p><strong>Description:</strong> Learning key models using first principle, implementing directly from python.</p>
-                <p><strong>Impact:</strong> Understood the implicit data assumptions , Strengths and limitations of the model, thereby learning when to use what model. </p>
-                <p><a href="https://github.com/manjitullal/Machine-Learning-from-scratch-code">code</a></p>
-              </div>
-              <div class="col-md-4">                
-                <p><strong>Title:</strong> Exploratory Analysis.</p>
-                <p><strong>Description:</strong> Introductory Analysis to a given dataset</p>
-                <p><strong>Impact:</strong> Learnt different visualization methods to aid analysis. </p>
-                <p><a href="https://github.com/manjitullal/EDA-projects">code</a></p>
-              </div>
-              <div class="col-md-4">            
-                <p><strong>Title:</strong> Competition submissions</p>
-                <p><strong>Description:</strong> Solve Data Science challenges and other code challenges</p>
-                <p><strong>Impact:</strong> Experienced different Data Science challenges given by the firms for their position.</p>
-                <p><a href="https://github.com/manjitullal/DataChallenge">code</a></p>
-              </div>
-            </div>
-            <p ><strong>Neural Networks</strong></p>
-            <div class="row">
-              <div class="col-md-4">      
-                <p><strong>Title:</strong> Implementation of Transformer Algorithm</p>
-                <p><strong>Description:</strong> Developed the original attention model from the paper "Attention is all you need" using Pytorch. Trained the model on Numeric data for sequence prediction.</p>
-                <p><strong>Impact:</strong></p>
-                <p><a href="https://github.com/manjitullal/LanguageModels">code</a></p>
-              </div>
-              <div class="col-md-4">                
-                <p><strong>Title:</strong> Image Classification</p>
-                <p><strong>Description:</strong> Created a model to detect class of the image. Explored techniques to find the bounding boxes to locate the object within the image.</p>
-                <p><strong>Impact:</strong> Ability to follow computer vision algorithms and model them.</p>
-                <p><a href="https://github.com/manjitullal/Deep-Learning-Udacity">code</a></p>
-              </div>
-              <div class="col-md-4">                
-                <p><strong>Title:</strong> Spark</p>
-                <p><strong>Description:</strong> Used Spark , Scala on Twitter dataset and ran mapreduce operation to uncover the count of followers.</p>
-                <p><strong>Impact:</strong> Ability to run machine learning on a distributed system.</p>
-                <p><a href="https://github.com/manjitullal/Hadoop_and_Spark">code</a></p>
+  <h2>Timeline</h2>
 
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-    <!-- Portfolio / gallery end-->
-    <!-- text page-->
-    <section id="blog" class="text-page section-inverse">
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-12">
-            <h2 class="heading">Blog</h2>
-            <div class="row">
-              <div class="col-md-6">
-                <p>https://thecuriouspeopleblog.wordpress.com/</p>
-                <p>This is a blog dedicated to the inner writer in me. Sharing knowledge and experimenting on Ideas</p>
-              </div>
-              
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+  <div class="entry">
+    <div class="when">2024 – now</div>
+    <div class="logo"><img src="img/logos/amazon.svg" alt="Amazon logo"></div>
+    <div class="what">
+      <strong>Amazon, Private Brands</strong>
+      <span class="role">Data Scientist</span>
+      <p>Personalized and context-aware ad valuation for Private Brand products on Amazon Search
+        and Product Detail Pages. Purchase-rate models (gradient boosting, separate CTR and CVR models),
+        causal incrementality models, transformer-based relevance, and PySpark pipelines over
+        100M+ records for training and inference.</p>
+    </div>
+  </div>
 
-    <!-- text page end-->
-    <!-- contact-->
-    <section id="contact" style="background-color: #fff;" class="text-page pb-4"> 
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-12">
-            <h2 class="heading">Contact</h2>
-            <div class="row">
-              <div class="col-lg-6">
-                <p>email me at <strong>ullal.m@northeastern.edu</strong></p>
-                <p>find me on LinkedIn <strong>https://www.linkedin.com/in/manjit-ullal/</strong></p>
-              </div>
-              <div class="col-lg-6">
+  <div class="entry">
+    <div class="when">2022 – 2024</div>
+    <div class="logo"><img src="img/logos/amazon.svg" alt="Amazon logo"></div>
+    <div class="what">
+      <strong>Amazon Advertising</strong>
+      <span class="role">Data Scientist</span>
+      <p>Recommendation systems for advertisers: customized campaign actions from clustering plus
+        learned business rules, peer-benchmarked goal recommendations for large advertisers,
+        propensity models to personalize recommendations, and incrementality analysis for Prime Day.</p>
+    </div>
+  </div>
 
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  
-    <footer style="background-color: #111;">
-      <div class="container"> 
-        <div class="row copyright">
-          <div class="col-md-6">
-            <p class="mb-md-0 text-center text-md-left">&copy;2020 Manjit Ullal</p>
-          </div>
-          <div class="col-md-6">
-            <p class="credit mb-md-0 text-center text-md-right">Template by <a href="https://bootstrapious.com/p/how-to-build-a-working-bootstrap-contact-form">Bootstrapious</a></p>
-            <!-- Please do not remove the backlink to us. It is part of the licence conditions. Thanks for understanding :)-->
-          </div>
-        </div>
-      </div>
-    </footer>
-    <!-- JavaScript files-->
-    <script src="vendor/jquery/jquery.min.js"></script>
-    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="vendor/jquery.cookie/jquery.cookie.js"> </script>
-    <script src="vendor/lightbox2/js/lightbox.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.4.0/leaflet.js"> </script>
-    <script src="js/front.js"></script>
-  </body>
+  <div class="entry">
+    <div class="when">2021</div>
+    <div class="logo"><img src="img/logos/amazon.svg" alt="Amazon logo"></div>
+    <div class="what">
+      <strong>Amazon Advertising</strong>
+      <span class="role">Data Science Intern</span>
+      <p>Studied product-grouping strategies for ad campaigns to guide product direction.</p>
+    </div>
+  </div>
+
+  <div class="entry">
+    <div class="when">2019 – 2021</div>
+    <div class="logo"><img src="img/logos/northeastern.png" alt="Northeastern University logo"></div>
+    <div class="what">
+      <strong>Northeastern University, Boston</strong>
+      <span class="role">M.S. Data Science</span>
+      <p>Graduate research on neural point processes for spatiotemporal event dynamics
+        (published at PMLR); built RNN and attention baselines.</p>
+    </div>
+  </div>
+
+  <div class="entry">
+    <div class="when">2015 – 2019</div>
+    <div class="logo"><img src="img/logos/infosys.svg" alt="Infosys logo"></div>
+    <div class="what">
+      <strong>Infosys</strong>
+      <span class="role">Senior Analyst</span>
+      <p>End-to-end time-series forecasting to automate capacity planning.</p>
+    </div>
+  </div>
+
+  <div class="entry">
+    <div class="when">2006 – 2010</div>
+    <div class="logo"><img src="img/logos/vtu.png" alt="VTU logo"></div>
+    <div class="what">
+      <strong>Visvesvaraya Technological University</strong>
+      <span class="role">B.E. Computer Science</span>
+    </div>
+  </div>
+
+  <h2>What I Work With</h2>
+
+  <div class="group">
+    <b>Modeling</b>
+    <div class="chips">
+      <span>Ranking &amp; Recommendation</span><span>CTR estimation</span><span>CVR estimation</span>
+      <span>Gradient Boosting</span><span>Transformers</span><span>Deep Learning</span>
+      <span>Clustering</span><span>Propensity Models</span>
+    </div>
+  </div>
+  <div class="group">
+    <b>Measurement</b>
+    <div class="chips">
+      <span>A/B Testing</span><span>Causal Inference</span><span>Incrementality</span>
+      <span>Statistical Modeling</span><span>Simulation</span>
+    </div>
+  </div>
+  <div class="group">
+    <b>Engineering</b>
+    <div class="chips">
+      <span>Python</span><span>SQL</span><span>PyTorch</span><span>PySpark</span>
+      <span>AWS SageMaker</span><span>Docker</span><span>Git</span>
+    </div>
+  </div>
+
+  <h2>Research Projects</h2>
+
+  <div class="project">
+    <a class="title" href="https://github.com/manjitullal/spatiotemporal">Transformers for spatiotemporal event prediction</a>
+    <div class="meta">point processes &middot; transformers &middot; PyTorch</div>
+    <p>Adapted the Transformer Hawkes Process to model when and where the next event happens, with
+      data pipelines for earthquakes, Foursquare check-ins, and NYC event data, plus a sequence-to-sequence
+      Transformer for numeric sequence prediction. Grew out of my graduate research on neural point
+      processes (published at PMLR).</p>
+  </div>
+
+  <div class="project">
+    <a class="title" href="https://github.com/manjitullal/recommendation">Recommenders: matrix factorization to neural collaborative filtering</a>
+    <div class="meta">recommendation &middot; embeddings &middot; PyTorch</div>
+    <p>On MovieLens, built matrix factorization, matrix factorization with user and item biases, and a
+      neural collaborative-filtering model in PyTorch, alongside a content-based recommender using
+      TF-IDF over movie metadata and a vote-weighted rating.</p>
+  </div>
+
+  <div class="project">
+    <a class="title" href="https://github.com/manjitullal/DE-GAN">DE-GAN: document enhancement with GANs</a>
+    <div class="meta">paper reimplementation &middot; GANs &middot; PyTorch</div>
+    <p>Reimplemented <a href="https://arxiv.org/abs/2010.08764">DE-GAN</a> in PyTorch for three tasks:
+      deblurring, cleaning degraded scans, and removing watermarks, each with a standard and a Wasserstein
+      GAN variant. Built a patch-based dataset to stretch 100 source images, and compared PSNR against the paper.</p>
+  </div>
+
+  <div class="project">
+    <a class="title" href="https://github.com/manjitullal/Lung-Diseases-Detection">Lung disease detection from chest X-rays</a>
+    <div class="meta">computer vision &middot; medical imaging &middot; PyTorch</div>
+    <p>15-label disease classification on the NIH chest X-ray dataset with ResNet-101 and asymmetric loss
+      for the heavy label imbalance, evaluated with mAP and ROC curves; and a U-Net written from scratch
+      for lung segmentation.</p>
+  </div>
+
+  <div class="project">
+    <a class="title" href="https://github.com/manjitullal/Machine-Learning-from-scratch-code">Classic ML from scratch</a>
+    <div class="meta">NumPy &middot; first principles</div>
+    <p>Linear regression by least squares and by gradient descent, and logistic regression with
+      hand-written cost and gradient, alongside notebooks on PCA, LDA, and XGBoost.</p>
+  </div>
+
+  <h2 id="notes">Notes</h2>
+
+  <h3 class="subhead">Machine Learning &amp; Causal Inference</h3>
+  <ul class="plain">
+    <li><a href="notes/r-learner.html">The R-learner, explained in seven layers</a> &mdash;
+      a walk through Nie &amp; Wager's quasi-oracle estimation of heterogeneous treatment effects,
+      from S- and T-learners to the Robinson decomposition and R-loss.</li>
+    <li><a href="notes/sample-selection-bias.html">Correcting sample-selection bias with importance weights</a> &mdash;
+      reweighting training rows when the training and target distributions differ, with
+      <a href="notes/code/sample-selection-bias/bias_correction_cluster_weighting.py">code</a>.</li>
+  </ul>
+
+  <h3 class="subhead">Statistics</h3>
+  <ul class="plain">
+    <li><a href="notes/ab-significance.html">A/B test significance, step by step</a> &mdash;
+      effect, standard error, t-statistic, confidence interval, and what to conclude.</li>
+    <li><a href="notes/linear-fit-interpretation.html">What a straight line says about a curve</a> &mdash;
+      interpreting slope and intercept when a linear model is fit to <code>y = x&sup2;</code>.</li>
+  </ul>
+
+  <h3 class="subhead">Tools &amp; Packages</h3>
+  <ul class="plain">
+    <li><a href="notes/dataframe-benchmark.html">pandas vs. Polars vs. PyArrow vs. DuckDB vs. Dask</a> &mdash;
+      seven common tasks timed on a 1M-row ads dataset, and when to pick each library.</li>
+  </ul>
+
+  <footer>Plain HTML and CSS.</footer>
+
+</main>
+
+<script>
+  function revealEmail(e) {
+    e.preventDefault();
+    var addr = ["manjit862", "gmail.com"].join("@");
+    var a = document.getElementById("email");
+    a.textContent = addr;
+    a.href = "mailto:" + addr;
+    a.onclick = null;
+  }
+</script>
+</body>
 </html>

@@ -1,0 +1,6 @@
+pandas
+polars
+pyarrow
+dask[dataframe]
+duckdb
+numpy
